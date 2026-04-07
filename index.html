@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="自転車点検アプリ">
 <!-- テーマカラー -->
 <meta name="theme-color" content="#0d1b2a">
-<meta name="description" content="電動キックボード・電動自転車・ハマー・e-bike 日常点検管理アプリ">
+<meta name="description" content="キックボード・電動自転車・ハマー・e-bike 日常点検管理アプリ">
 <title>自転車点検アプリ | Vehicle Inspection</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
@@ -115,19 +115,17 @@
     <!-- 車両別統計 -->
     <div class="section-title">車両別点検状況</div>
     <div class="vehicle-stats-grid">
-      <div class="vehicle-stat-card" data-vehicle="電動キックボード">
+      <div class="vehicle-stat-card" data-vehicle="キックボード">
         <div class="vehicle-icon kickboard">
           <svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="15" cy="38" r="8" stroke="#FF6B00" stroke-width="2.5"/>
-            <circle cx="65" cy="38" r="8" stroke="#FF6B00" stroke-width="2.5"/>
-            <rect x="14" y="12" width="3" height="26" fill="#fff" rx="1"/>
-            <rect x="8" y="10" width="15" height="4" fill="#FF6B00" rx="2"/>
-            <path d="M17 38 L55 20 L65 38" stroke="#fff" stroke-width="2.5" fill="none"/>
-            <rect x="50" y="16" width="20" height="6" fill="#FF6B00" rx="2" opacity="0.8"/>
+            <circle cx="15" cy="42" r="6" stroke="#FF6B00" stroke-width="2.5"/>
+            <circle cx="65" cy="42" r="6" stroke="#FF6B00" stroke-width="2.5"/>
+            <path d="M15 10 L15 42 L65 42" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M8 12 L22 12" stroke="#FF6B00" stroke-width="4" stroke-linecap="round"/>
           </svg>
         </div>
         <div class="vehicle-stat-info">
-          <h3>電動キックボード</h3>
+          <h3>キックボード</h3>
           <span class="vehicle-count" id="vc-kickboard">0件</span>
         </div>
       </div>
@@ -225,20 +223,19 @@
     <div class="form-step" id="form-step-1">
       <h2 class="step-title">点検する車両を選択してください</h2>
       <div class="vehicle-select-grid">
-        <div class="vehicle-card" onclick="selectVehicle('電動キックボード', this)">
+        <div class="vehicle-card" onclick="selectVehicle('キックボード', this)">
           <div class="vehicle-card-icon">
             <svg viewBox="0 0 100 70" fill="none">
-              <circle cx="20" cy="52" r="13" stroke="#FF6B00" stroke-width="3"/>
-              <circle cx="80" cy="52" r="13" stroke="#FF6B00" stroke-width="3"/>
-              <rect x="18" y="16" width="4" height="36" fill="#fff" rx="2"/>
-              <rect x="10" y="13" width="20" height="6" fill="#FF6B00" rx="3"/>
-              <path d="M22 52 L65 28 L80 52" stroke="#fff" stroke-width="3" fill="none"/>
-              <rect x="62" y="22" width="25" height="8" fill="#FF6B00" rx="3" opacity="0.8"/>
-              <path d="M72 18 L60 18" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- マニュアルキックボードの絵に修正 -->
+              <circle cx="20" cy="55" r="10" stroke="#FF6B00" stroke-width="3"/>
+              <circle cx="85" cy="55" r="10" stroke="#FF6B00" stroke-width="3"/>
+              <path d="M18 10 L18 55" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+              <path d="M10 12 L26 12" stroke="#FF6B00" stroke-width="5" stroke-linecap="round"/>
+              <path d="M18 55 L85 55" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
             </svg>
           </div>
-          <h3>電動キックボード</h3>
-          <p>Electric Kickboard</p>
+          <h3>キックボード</h3>
+          <p>Kickboard</p>
           <div class="selected-badge">✓ 選択中</div>
         </div>
         <div class="vehicle-card" onclick="selectVehicle('電動自転車', this)">
@@ -319,8 +316,14 @@
         </div>
         <div class="form-group">
           <label>車両番号</label>
-          <input type="text" id="vehicle-number" class="form-input" placeholder="例：001（後日設定可）" list="vehicle-numbers-list">
-          <datalist id="vehicle-numbers-list"></datalist>
+          <div id="vnum-container" style="display:flex; flex-direction:column; gap:8px;">
+            <select id="vehicle-number-select" class="form-input" onchange="toggleVNumManual(this)">
+              <option value="">選択してください</option>
+              <!-- JSで動的に追加 -->
+              <option value="manual">直接入力...</option>
+            </select>
+            <input type="text" id="vehicle-number-manual" class="form-input" placeholder="車両番号を入力" style="display:none">
+          </div>
         </div>
         <div class="form-group full-width">
           <label>点検場所</label>
@@ -400,9 +403,13 @@
     <div class="page-header">
       <h1>点検履歴</h1>
       <div class="header-actions">
+        <div class="select-all-wrapper">
+          <input type="checkbox" id="select-all-history" onchange="toggleAllHistory(this)">
+          <label for="select-all-history">すべて選択</label>
+        </div>
         <select class="filter-select" id="filter-vehicle" onchange="filterHistory()">
           <option value="">全車両</option>
-          <option value="電動キックボード">電動キックボード</option>
+          <option value="キックボード">キックボード</option>
           <option value="電動自転車">電動自転車</option>
           <option value="ハマー">ハマー</option>
           <option value="e-bike">e-bike</option>
@@ -416,6 +423,18 @@
         </select>
       </div>
     </div>
+    
+    <!-- 一括操作バー -->
+    <div class="bulk-action-bar" id="bulk-action-bar" style="display:none">
+      <div class="selected-info">
+        <span id="selected-count">0件選択中</span>
+      </div>
+      <button class="btn-primary" onclick="bulkSubmit()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        選択した点検を一括申請
+      </button>
+    </div>
+
     <div class="history-list" id="history-list"></div>
   </div>
 
@@ -564,7 +583,7 @@
         <div class="form-group" style="max-width:300px; margin-bottom:20px">
           <label>対象車両を選択</label>
           <select id="ref-vehicle-select" class="form-input" onchange="renderRefPhotoSettings()">
-            <option value="電動キックボード">電動キックボード</option>
+            <option value="キックボード">キックボード</option>
             <option value="電動自転車">電動自転車</option>
             <option value="ハマー">ハマー</option>
             <option value="e-bike">e-bike</option>

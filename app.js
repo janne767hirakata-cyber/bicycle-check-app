@@ -1,6 +1,12 @@
+// ===== グローバルステート =====
+let selectedVehicle = '';
+let selectedWeather = '';
+let currentStep = 1;
+let editingDraftId = null;
+
 // ===== データ =====
-const VEHICLES = ['電動キックボード', '電動自転車', 'ハマー', 'e-bike'];
-const VEHICLE_IDS = { '電動キックボード': 'kickboard', '電動自転車': 'ebicycle', 'ハマー': 'hummer', 'e-bike': 'ebike' };
+const VEHICLES = ['キックボード', '電動自転車', 'ハマー', 'e-bike'];
+const VEHICLE_IDS = { 'キックボード': 'kickboard', '電動自転車': 'ebicycle', 'ハマー': 'hummer', 'e-bike': 'ebike' };
 
 const CHECKLIST = [
   {
@@ -329,17 +335,44 @@ function selectWeather(w, el) {
 }
 
 // ===== ステップ管理 =====
+function toggleVNumManual(sel) {
+  const manualInput = document.getElementById('vehicle-number-manual');
+  if (sel.value === 'manual') {
+    manualInput.style.display = 'block';
+    manualInput.focus();
+  } else {
+    manualInput.style.display = 'none';
+    manualInput.value = '';
+  }
+}
+
+// ===== ステップ管理 =====
 function goToStep(step) {
   if (step === 2) {
     if (!selectedVehicle) { showToast('車両を選択してください', 'error'); return; }
     setStepDate();
     
-    // 車両番号候補の更新
+    // 車両番号候補の更新 (Select形式)
     const vnData = getVehicleNumbers();
-    const list = document.getElementById('vehicle-numbers-list');
-    if (list) {
+    const select = document.getElementById('vehicle-number-select');
+    const manualInput = document.getElementById('vehicle-number-manual');
+    
+    if (select) {
       const numbers = vnData[selectedVehicle] ? vnData[selectedVehicle].split(',').map(s => s.trim()).filter(s => s) : [];
-      list.innerHTML = numbers.map(n => `<option value="${n}">`).join('');
+      let optionsHTML = '<option value="">選択してください</option>';
+      numbers.forEach(n => {
+        optionsHTML += `<option value="${n}">${n}</option>`;
+      });
+      optionsHTML += '<option value="manual">直接入力...</option>';
+      select.innerHTML = optionsHTML;
+      
+      // 既存の入力があれば合わせる
+      if (manualInput && manualInput.value) {
+        select.value = 'manual';
+        manualInput.style.display = 'block';
+      } else {
+        manualInput.style.display = 'none';
+      }
     }
   }
   if (step === 3) {
@@ -588,7 +621,9 @@ function buildSummary() {
   const vehicle = selectedVehicle;
   const inspector = document.getElementById('inspector-name').value;
   const date = document.getElementById('inspection-date').value;
-  const vNum = document.getElementById('vehicle-number').value;
+  const select = document.getElementById('vehicle-number-select');
+  const manual = document.getElementById('vehicle-number-manual');
+  const vNum = (select && select.value === 'manual') ? manual.value : (select ? select.value : '');
   const loc = document.getElementById('inspection-location').value;
 
   document.getElementById('completion-summary').innerHTML = `
@@ -627,47 +662,62 @@ function submitInspection() {
 }
 
 function saveInspection(status) {
-  const name = document.getElementById('inspector-name').value.trim();
+  const nameEl = document.getElementById('inspector-name');
+  const name = nameEl ? nameEl.value.trim() : '';
   if (!name) { showToast('点検者名を入力してください', 'error'); return null; }
+
+  const deptEl = document.getElementById('inspector-dept');
+  const dateEl = document.getElementById('inspection-date');
+  const locEl = document.getElementById('inspection-location');
+  const overEl = document.getElementById('overall-comment');
+  const appEl = document.getElementById('approval-comment');
 
   const checks = collectChecklistData();
   const data = getData();
 
   let id;
   if (editingDraftId) {
+    const select = document.getElementById('vehicle-number-select');
+    const manual = document.getElementById('vehicle-number-manual');
+    const vNum = (select && select.value === 'manual') ? manual.value : (select ? select.value : '');
+
     id = editingDraftId;
     const idx = data.findIndex(d => d.id === id);
     if (idx >= 0) {
       data[idx] = {
         ...data[idx],
         vehicle: selectedVehicle,
-        vehicleNumber: document.getElementById('vehicle-number').value,
+        vehicleNumber: vNum,
         inspectorName: name,
-        inspectorDept: document.getElementById('inspector-dept').value,
-        inspectionDate: document.getElementById('inspection-date').value,
-        location: document.getElementById('inspection-location').value,
+        inspectorDept: deptEl ? deptEl.value : '',
+        inspectionDate: dateEl ? dateEl.value : '',
+        location: locEl ? locEl.value : '',
         weather: selectedWeather,
         checks,
-        overallComment: document.getElementById('overall-comment').value,
-        approvalComment: document.getElementById('approval-comment').value,
+        overallComment: overEl ? overEl.value : '',
+        approvalComment: appEl ? appEl.value : '',
         status,
         updatedAt: new Date().toISOString()
       };
     }
   } else {
+    const select = document.getElementById('vehicle-number-select');
+    const manual = document.getElementById('vehicle-number-manual');
+    const vNum = (select && select.value === 'manual') ? manual.value : (select ? select.value : '');
+
     id = 'insp_' + Date.now();
     data.push({
       id,
       vehicle: selectedVehicle,
-      vehicleNumber: document.getElementById('vehicle-number').value,
+      vehicleNumber: vNum,
       inspectorName: name,
-      inspectorDept: document.getElementById('inspector-dept').value,
-      inspectionDate: document.getElementById('inspection-date').value,
-      location: document.getElementById('inspection-location').value,
+      inspectorDept: deptEl ? deptEl.value : '',
+      inspectionDate: dateEl ? dateEl.value : '',
+      location: locEl ? locEl.value : '',
       weather: selectedWeather,
       checks,
-      overallComment: document.getElementById('overall-comment').value,
-      approvalComment: document.getElementById('approval-comment').value,
+      overallComment: overEl ? overEl.value : '',
+      approvalComment: appEl ? appEl.value : '',
       status,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -701,9 +751,15 @@ function resetForm() {
   document.querySelectorAll('.vehicle-card').forEach(c => c.classList.remove('selected'));
   document.querySelectorAll('.weather-btn').forEach(b => b.classList.remove('selected'));
   document.getElementById('inspector-name').value = '';
-  document.getElementById('inspector-dept').value = '';
-  document.getElementById('vehicle-number').value = '';
-  document.getElementById('inspection-location').value = '';
+  document.getElementById('inspector-dept').value = '新大村新幹線工務所信通'; // デフォルト値を保持
+  const vnSelect = document.getElementById('vehicle-number-select');
+  const vnManual = document.getElementById('vehicle-number-manual');
+  if (vnSelect) vnSelect.value = '';
+  if (vnManual) {
+    vnManual.value = '';
+    vnManual.style.display = 'none';
+  }
+  document.getElementById('inspection-location').value = '倉庫'; // デフォルト値を保持
   document.getElementById('inspection-date').value = '';
   document.getElementById('overall-comment').value = '';
   document.getElementById('approval-comment').value = '';
@@ -732,7 +788,31 @@ function resumeDraft(id) {
 
   document.getElementById('inspector-name').value = insp.inspectorName || '';
   document.getElementById('inspector-dept').value = insp.inspectorDept || '';
-  document.getElementById('vehicle-number').value = insp.vehicleNumber || '';
+  
+  const select = document.getElementById('vehicle-number-select');
+  const manual = document.getElementById('vehicle-number-manual');
+  if (select) {
+    // 一旦全オプションはgoToStep(2)で入るが、ここでもセットが必要な場合がある
+    // 車種選択
+    selectedVehicle = insp.vehicle;
+    goToStep(2); 
+    
+    const v = insp.vehicleNumber || '';
+    const exists = Array.from(select.options).some(opt => opt.value === v);
+    if (exists && v !== '') {
+      select.value = v;
+      manual.style.display = 'none';
+      manual.value = '';
+    } else if (v !== '') {
+      select.value = 'manual';
+      manual.style.display = 'block';
+      manual.value = v;
+    } else {
+      select.value = '';
+      manual.style.display = 'none';
+    }
+  }
+
   document.getElementById('inspection-location').value = insp.location || '';
   document.getElementById('inspection-date').value = insp.inspectionDate || '';
   document.getElementById('overall-comment').value = insp.overallComment || '';
@@ -906,6 +986,19 @@ async function sendToPowerAutomate(inspectionId) {
 }
 
 // ===== 履歴 =====
+// 一括選択用
+function toggleAllHistory(cb) {
+  const items = document.querySelectorAll('.history-checkbox');
+  items.forEach(i => i.checked = cb.checked);
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const count = document.querySelectorAll('.history-checkbox:checked').length;
+  document.getElementById('selected-count').textContent = count + '件選択中';
+  document.getElementById('bulk-action-bar').style.display = count > 0 ? 'flex' : 'none';
+}
+
 function renderHistory() {
   const vehicleFilter = document.getElementById('filter-vehicle').value;
   const statusFilter = document.getElementById('filter-status').value;
@@ -917,20 +1010,92 @@ function renderHistory() {
   const container = document.getElementById('history-list');
   if (data.length === 0) {
     container.innerHTML = `<div class="empty-state"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="28" stroke="#FF6B00" stroke-width="2" opacity="0.3"/></svg><p>該当する点検記録がありません</p></div>`;
+    document.getElementById('bulk-action-bar').style.display = 'none';
     return;
   }
-  container.innerHTML = data.map(d => `
-    <div class="inspection-item" onclick="openInspectionDetail('${d.id}')">
-      <div class="item-vehicle-icon">${getVehicleSVG(d.vehicle)}</div>
-      <div class="item-info">
-        <div class="item-title">${d.vehicle} ${d.vehicleNumber ? '【' + d.vehicleNumber + '】' : ''}</div>
-        <div class="item-sub">点検者: ${d.inspectorName || '未記入'} ／ ${d.location || '場所未記入'} ／ ${formatDate(d.createdAt)}</div>
+
+  container.innerHTML = data.map(d => {
+    const canBulk = (d.status === 'draft' || d.status === 'rejected');
+    return `
+    <div class="inspection-item ${canBulk ? 'selectable' : ''}" onclick="${canBulk ? '' : `openInspectionDetail('${d.id}')`}">
+      ${canBulk ? `
+        <div class="history-checkbox-wrapper">
+          <input type="checkbox" class="history-checkbox" value="${d.id}" onchange="updateSelectedCount()" onclick="event.stopPropagation()">
+        </div>
+      ` : ''}
+      <div class="inspection-item-content" onclick="openInspectionDetail('${d.id}')">
+        <div class="item-vehicle-icon">${getVehicleSVG(d.vehicle)}</div>
+        <div class="item-info">
+          <div class="item-title">${d.vehicle} ${d.vehicleNumber ? '【' + d.vehicleNumber + '】' : ''}</div>
+          <div class="item-sub">点検者: ${d.inspectorName || '未記入'} ／ ${d.location || '場所未記入'} ／ ${formatDate(d.createdAt)}</div>
+        </div>
+        <div class="item-actions">
+          <span class="status-badge ${statusClass(d.status)}">${statusLabel(d.status)}</span>
+          ${(d.status==='draft' || d.status==='rejected') ? `<button class="btn-secondary" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();resumeDraft('${d.id}')">再編集</button>` : ''}
+        </div>
       </div>
-      <div class="item-actions">
-        <span class="status-badge ${statusClass(d.status)}">${statusLabel(d.status)}</span>
-        ${d.status==='draft' ? `<button class="btn-secondary" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();resumeDraft('${d.id}')">再編集</button>` : ''}
-      </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  updateSelectedCount();
+}
+
+async function bulkSubmit() {
+  const selectedIds = Array.from(document.querySelectorAll('.history-checkbox:checked')).map(cb => cb.value);
+  if (selectedIds.length === 0) return;
+
+  const settings = getSettings();
+  if (!settings.approverEmail) {
+    showToast('先に設定から承認者のメールアドレスを設定してください', 'error'); return;
+  }
+
+  if (!confirm(`${selectedIds.length}件の点検を一括で承認依頼に出します。よろしいですか？`)) return;
+
+  const data = getData();
+  const selectedInspections = data.filter(d => selectedIds.includes(d.id));
+  
+  // 一括メール内容の生成
+  const email = settings.approverEmail;
+  const subject = `【一括点検承認依頼】${selectedInspections.length}件の報告`;
+  let body = `${settings.approverName || '助役'} 様\n\n以下の点検報告（計${selectedInspections.length}件）の承認をお願いします。\n\n`;
+
+  for (const insp of selectedInspections) {
+    let ok=0, warn=0, ng=0;
+    if (insp.checks) {
+      Object.values(insp.checks).forEach(c => {
+        if(c.status === 'ok') ok++; else if(c.status === 'warn') warn++; else if(c.status === 'ng') ng++;
+      });
+    }
+    body += `--------------------------\n`;
+    body += `■車両: ${insp.vehicle} ${insp.vehicleNumber || ''}\n`;
+    body += `■点検者: ${insp.inspectorName || ''}\n`;
+    body += `■結果: 良好:${ok} / 要注意:${warn} / 不良:${ng}\n`;
+    if (insp.approvalComment) body += `■件名: ${insp.approvalComment}\n`;
+    
+    // ステータス更新
+    insp.status = 'pending';
+    insp.updatedAt = new Date().toISOString();
+    
+    // 個別にSharePoint同期もトリガー（バックグラウンド）
+    sendToPowerAutomate(insp.id);
+  }
+
+  body += `\n点検システムより一括送信`;
+
+  // 保存と表示更新
+  saveData(data);
+  renderHistory();
+  updateApprovalBadge();
+
+  // メール起動
+  const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const a = document.createElement('a');
+  a.href = mailtoLink;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => document.body.removeChild(a), 500);
+
+  showToast(`${selectedInspections.length}件を一括申請しました`, 'success');
 }
 
 function filterHistory() { renderHistory(); }
@@ -1101,7 +1266,7 @@ function openInspectionDetail(id) {
     <div class="modal-export-actions">
       <button class="btn-primary" onclick="exportPDF('${insp.id}')">📄 PDF出力</button>
       <button class="btn-save" onclick="exportExcel('${insp.id}')">📊 Excel出力</button>
-      ${insp.status === 'draft' ? `<button class="btn-secondary" onclick="resumeDraft('${insp.id}')">✏️ 続きを編集</button>` : ''}
+      ${(insp.status === 'draft' || insp.status === 'rejected') ? `<button class="btn-secondary" onclick="resumeDraft('${insp.id}')">✏️ 続きを編集</button>` : ''}
       <button class="btn-danger" onclick="deleteInspection('${insp.id}')">🗑️ 削除</button>
     </div>`;
 
@@ -1639,7 +1804,7 @@ function renderCustomItemsList() {
 
 function getVehicleSVG(vehicle) {
   const svgs = {
-    '電動キックボード': `<svg viewBox="0 0 80 50" fill="none" style="width:100%;height:100%"><circle cx="15" cy="38" r="8" stroke="#FF6B00" stroke-width="2.5"/><circle cx="65" cy="38" r="8" stroke="#FF6B00" stroke-width="2.5"/><rect x="14" y="12" width="3" height="26" fill="#fff" rx="1"/><rect x="8" y="10" width="15" height="4" fill="#FF6B00" rx="2"/><path d="M17 38 L55 20 L65 38" stroke="#fff" stroke-width="2.5" fill="none"/><rect x="50" y="16" width="20" height="6" fill="#FF6B00" rx="2" opacity="0.8"/></svg>`,
+    'キックボード': `<svg viewBox="0 0 80 50" fill="none" style="width:100%;height:100%"><circle cx="15" cy="42" r="6" stroke="#FF6B00" stroke-width="2.5"/><circle cx="65" cy="42" r="6" stroke="#FF6B00" stroke-width="2.5"/><path d="M15 10 L15 42 L65 42" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M8 12 L22 12" stroke="#FF6B00" stroke-width="4" stroke-linecap="round"/></svg>`,
     '電動自転車': `<svg viewBox="0 0 80 50" fill="none" style="width:100%;height:100%"><circle cx="15" cy="35" r="11" stroke="#FF6B00" stroke-width="2.5"/><circle cx="65" cy="35" r="11" stroke="#FF6B00" stroke-width="2.5"/><circle cx="15" cy="35" r="4" fill="#FF6B00"/><circle cx="65" cy="35" r="4" fill="#FF6B00"/><path d="M15 35 L28 15 L45 15 L65 35" stroke="#fff" stroke-width="2.5" fill="none"/><path d="M28 15 L38 35" stroke="#fff" stroke-width="2"/><rect x="35" y="22" width="12" height="6" fill="#FF6B00" rx="2" opacity="0.9"/></svg>`,
     'ハマー': `<svg viewBox="0 0 80 50" fill="none" style="width:100%;height:100%"><circle cx="15" cy="35" r="11" stroke="#FF6B00" stroke-width="2.5"/><circle cx="65" cy="35" r="11" stroke="#FF6B00" stroke-width="2.5"/><circle cx="15" cy="35" r="4" fill="#FF6B00"/><circle cx="65" cy="35" r="4" fill="#FF6B00"/><path d="M15 35 L25 12 L55 12 L65 35" stroke="#fff" stroke-width="2.5" fill="none"/><path d="M25 12 L35 35" stroke="#fff" stroke-width="2"/><path d="M20 12 L60 12" stroke="#FF6B00" stroke-width="3"/><path d="M22 8 L28 8" stroke="#fff" stroke-width="4" stroke-linecap="round"/></svg>`,
     'e-bike': `<svg viewBox="0 0 80 50" fill="none" style="width:100%;height:100%"><circle cx="15" cy="35" r="11" stroke="#FF6B00" stroke-width="2.5"/><circle cx="65" cy="35" r="11" stroke="#FF6B00" stroke-width="2.5"/><circle cx="15" cy="35" r="4" fill="#FF6B00"/><circle cx="65" cy="35" r="4" fill="#FF6B00"/><path d="M15 35 L27 14 L48 14 L65 35" stroke="#fff" stroke-width="2.5" fill="none"/><path d="M27 14 L36 35" stroke="#fff" stroke-width="2"/><path d="M38 20 L50 20 L46 28 L54 28" stroke="#FF6B00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
