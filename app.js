@@ -224,7 +224,7 @@ async function migrateOldData(key) {
     'app_custom_items': 'customItems',
     'app_ref_photos': 'refPhotos'
   };
-  
+
   for (const old of oldKeys) {
     const val = localStorage.getItem(old);
     if (val) {
@@ -232,7 +232,7 @@ async function migrateOldData(key) {
         SESSION.cache[map[old]] = JSON.parse(val);
         await persist(map[old]);
         localStorage.removeItem(old); // 元の平文を削除
-      } catch(e) { console.warn('Migration failed for ' + old, e); }
+      } catch (e) { console.warn('Migration failed for ' + old, e); }
     }
   }
 }
@@ -286,21 +286,21 @@ function updateDashboard() {
   const data = getData();
   const now = new Date();
   document.getElementById('current-date').textContent =
-    now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日（' +
-    ['日','月','火','水','木','金','土'][now.getDay()] + '）';
+    now.getFullYear() + '年' + (now.getMonth() + 1) + '月' + now.getDate() + '日（' +
+    ['日', '月', '火', '水', '木', '金', '土'][now.getDay()] + '）';
 
   document.getElementById('stat-total').textContent = data.length;
-  document.getElementById('stat-pending').textContent = data.filter(d=>d.status==='pending').length;
-  document.getElementById('stat-approved').textContent = data.filter(d=>d.status==='approved').length;
-  document.getElementById('stat-rejected').textContent = data.filter(d=>d.status==='rejected').length;
+  document.getElementById('stat-pending').textContent = data.filter(d => d.status === 'pending').length;
+  document.getElementById('stat-approved').textContent = data.filter(d => d.status === 'approved').length;
+  document.getElementById('stat-rejected').textContent = data.filter(d => d.status === 'rejected').length;
 
   VEHICLES.forEach(v => {
     const id = VEHICLE_IDS[v];
     const el = document.getElementById('vc-' + id);
-    if (el) el.textContent = data.filter(d=>d.vehicle===v).length + '件';
+    if (el) el.textContent = data.filter(d => d.vehicle === v).length + '件';
   });
 
-  const recent = [...data].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5);
+  const recent = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
   const container = document.getElementById('recent-inspections');
   if (recent.length === 0) {
     container.innerHTML = `<div class="empty-state"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="28" stroke="#FF6B00" stroke-width="2" opacity="0.3"/><path d="M20 32 L28 40 L44 24" stroke="#FF6B00" stroke-width="3" stroke-linecap="round" opacity="0.3"/></svg><p>点検データがありません<br>「新規点検」から始めてください</p></div>`;
@@ -351,12 +351,12 @@ function goToStep(step) {
   if (step === 2) {
     if (!selectedVehicle) { showToast('車両を選択してください', 'error'); return; }
     setStepDate();
-    
+
     // 車両番号候補の更新 (Select形式)
     const vnData = getVehicleNumbers();
     const select = document.getElementById('vehicle-number-select');
     const manualInput = document.getElementById('vehicle-number-manual');
-    
+
     if (select) {
       const numbers = vnData[selectedVehicle] ? vnData[selectedVehicle].split(',').map(s => s.trim()).filter(s => s) : [];
       let optionsHTML = '<option value="">選択してください</option>';
@@ -365,7 +365,7 @@ function goToStep(step) {
       });
       optionsHTML += '<option value="manual">直接入力...</option>';
       select.innerHTML = optionsHTML;
-      
+
       // 既存の入力があれば合わせる
       if (manualInput && manualInput.value) {
         select.value = 'manual';
@@ -400,8 +400,8 @@ function setStepDate() {
   const el = document.getElementById('inspection-date');
   if (!el.value) {
     const now = new Date();
-    const pad = n => String(n).padStart(2,'0');
-    el.value = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes());
+    const pad = n => String(n).padStart(2, '0');
+    el.value = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
   }
 }
 
@@ -420,13 +420,13 @@ function handlePhotoSelect(event, itemId) {
   compressImage(file, (base64) => {
     const container = document.querySelector(`#ci-${itemId} .checklist-photo-area`);
     let preview = container.querySelector('.photo-preview-container');
-    
+
     if (!preview) {
       preview = document.createElement('div');
       preview.className = 'photo-preview-container';
       container.appendChild(preview);
     }
-    
+
     preview.innerHTML = `
       <img src="${base64}" class="photo-preview" onclick="viewPhoto('${base64}')">
       <button class="btn-remove-photo" onclick="removePhoto('${itemId}')">✕</button>
@@ -479,11 +479,11 @@ function viewReferencePhoto(itemId) {
 
   const modal = document.getElementById('modal-overlay');
   const content = document.getElementById('modal-content');
-  
+
   const refPhotos = getRefPhotos();
   const vehicleRefs = refPhotos[selectedVehicle] || {};
   const displayImg = vehicleRefs[itemId] || itemFound.refImage;
-  
+
   content.innerHTML = `
     <div style="text-align:center; padding: 20px;">
       <h3 style="margin-bottom:15px; color:var(--orange)">点検箇所確認：${itemFound.name}</h3>
@@ -522,14 +522,14 @@ function buildChecklist() {
   CHECKLIST.forEach(section => {
     // 固定項目とカスタム項目を結合
     const sectionItems = [...section.items, ...customItems.filter(ci => ci.section === section.section)];
-    
+
     // 1つでも有効な項目があるセクションのみ描画
     const itemsToRender = sectionItems.filter(it => activeItems ? activeItems.includes(it.id) : true);
     if (itemsToRender.length === 0) return;
 
     const sec = document.createElement('div');
     sec.className = 'checklist-section';
-    
+
     sec.innerHTML = `
       <div class="checklist-section-header">
         ${section.icon}
@@ -537,7 +537,7 @@ function buildChecklist() {
       </div>` +
       itemsToRender.map(item => {
         const displayImg = vehicleRefs[item.id] || item.refImage;
-        const itemName = (item.id === 'tire_air' && recommendedPressure) 
+        const itemName = (item.id === 'tire_air' && recommendedPressure)
           ? `${item.name} <span style="color:var(--orange); font-size:0.9em; margin-left:8px;">(推奨: ${recommendedPressure})</span>`
           : item.name;
 
@@ -612,9 +612,9 @@ function buildSummary() {
   const checks = collectChecklistData();
   let ok = 0, warn = 0, ng = 0, none = 0;
   Object.values(checks).forEach(c => {
-    if (c.status==='ok') ok++;
-    else if (c.status==='warn') warn++;
-    else if (c.status==='ng') ng++;
+    if (c.status === 'ok') ok++;
+    else if (c.status === 'warn') warn++;
+    else if (c.status === 'ng') ng++;
     else none++;
   });
 
@@ -631,7 +631,7 @@ function buildSummary() {
       <div style="width:70px;height:50px">${getVehicleSVG(vehicle)}</div>
       <div>
         <h3>${vehicle} ${vNum ? '【' + vNum + '】' : ''}</h3>
-        <p style="color:var(--gray-400);font-size:13px">点検者: ${inspector} ／ ${date ? date.replace('T',' ') : '未設定'} ／ ${loc || '場所未記入'}</p>
+        <p style="color:var(--gray-400);font-size:13px">点検者: ${inspector} ／ ${date ? date.replace('T', ' ') : '未設定'} ／ ${loc || '場所未記入'}</p>
       </div>
     </div>
     <div class="summary-grid">
@@ -729,11 +729,11 @@ function saveInspection(status) {
 
   const msg = status === 'draft' ? '下書きとして保存しました' : '承認依頼の準備ができました ✉️';
   showToast(msg, 'success');
-  
-  setTimeout(() => { 
+
+  setTimeout(() => {
     if (status !== 'draft') {
-      resetForm(); 
-      showPage('dashboard'); 
+      resetForm();
+      showPage('dashboard');
     } else {
       resetForm();
       showPage('history');
@@ -788,15 +788,15 @@ function resumeDraft(id) {
 
   document.getElementById('inspector-name').value = insp.inspectorName || '';
   document.getElementById('inspector-dept').value = insp.inspectorDept || '';
-  
+
   const select = document.getElementById('vehicle-number-select');
   const manual = document.getElementById('vehicle-number-manual');
   if (select) {
     // 一旦全オプションはgoToStep(2)で入るが、ここでもセットが必要な場合がある
     // 車種選択
     selectedVehicle = insp.vehicle;
-    goToStep(2); 
-    
+    goToStep(2);
+
     const v = insp.vehicleNumber || '';
     const exists = Array.from(select.options).some(opt => opt.value === v);
     if (exists && v !== '') {
@@ -843,7 +843,7 @@ function resumeDraft(id) {
         }
         const commentInput = document.getElementById('comment-' + itemId);
         if (commentInput && checkData.comment) commentInput.value = checkData.comment;
-        
+
         if (checkData.photo) {
           const photoArea = ci.querySelector('.checklist-photo-area');
           const preview = document.createElement('div');
@@ -870,12 +870,12 @@ function sendApprovalEmail(inspectionId) {
   const insp = data.find(d => d.id === inspectionId);
   if (!insp) return;
 
-  let ok=0, warn=0, ng=0;
+  let ok = 0, warn = 0, ng = 0;
   if (insp.checks) {
     Object.values(insp.checks).forEach(c => {
-      if(c.status === 'ok') ok++; 
-      else if(c.status === 'warn') warn++; 
-      else if(c.status === 'ng') ng++;
+      if (c.status === 'ok') ok++;
+      else if (c.status === 'warn') warn++;
+      else if (c.status === 'ng') ng++;
     });
   }
 
@@ -887,7 +887,7 @@ function sendApprovalEmail(inspectionId) {
     '',
     `■車両: ${insp.vehicle} ${insp.vehicleNumber || ''}`,
     `■点検者: ${insp.inspectorName || ''}`,
-    `■日時: ${insp.inspectionDate ? insp.inspectionDate.replace('T',' ') : ''}`,
+    `■日時: ${insp.inspectionDate ? insp.inspectionDate.replace('T', ' ') : ''}`,
     '',
     `【結果】 良好:${ok} / 要注意:${warn} / 不良:${ng}`,
     `【件名】 ${insp.approvalComment || 'なし'}`,
@@ -934,12 +934,12 @@ async function sendToPowerAutomate(inspectionId) {
     msgEl.style.color = 'var(--white)';
   }
 
-  let ok=0, warn=0, ng=0;
+  let ok = 0, warn = 0, ng = 0;
   if (insp.checks) {
     Object.values(insp.checks).forEach(c => {
-      if(c.status === 'ok') ok++; 
-      else if(c.status === 'warn') warn++; 
-      else if(c.status === 'ng') ng++;
+      if (c.status === 'ok') ok++;
+      else if (c.status === 'warn') warn++;
+      else if (c.status === 'ng') ng++;
     });
   }
 
@@ -1005,7 +1005,7 @@ function renderHistory() {
   let data = getData();
   if (vehicleFilter) data = data.filter(d => d.vehicle === vehicleFilter);
   if (statusFilter) data = data.filter(d => d.status === statusFilter);
-  data = [...data].sort((a,b) => new Date(b.createdAt)-new Date(a.createdAt));
+  data = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const container = document.getElementById('history-list');
   if (data.length === 0) {
@@ -1031,7 +1031,7 @@ function renderHistory() {
         </div>
         <div class="item-actions">
           <span class="status-badge ${statusClass(d.status)}">${statusLabel(d.status)}</span>
-          ${(d.status==='draft' || d.status==='rejected') ? `<button class="btn-secondary" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();resumeDraft('${d.id}')">再編集</button>` : ''}
+          ${(d.status === 'draft' || d.status === 'rejected') ? `<button class="btn-secondary" style="padding:6px 12px;font-size:12px" onclick="event.stopPropagation();resumeDraft('${d.id}')">再編集</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -1052,17 +1052,17 @@ async function bulkSubmit() {
 
   const data = getData();
   const selectedInspections = data.filter(d => selectedIds.includes(d.id));
-  
+
   // 一括メール内容の生成
   const email = settings.approverEmail;
   const subject = `【一括点検承認依頼】${selectedInspections.length}件の報告`;
   let body = `${settings.approverName || '助役'} 様\n\n以下の点検報告（計${selectedInspections.length}件）の承認をお願いします。\n\n`;
 
   for (const insp of selectedInspections) {
-    let ok=0, warn=0, ng=0;
+    let ok = 0, warn = 0, ng = 0;
     if (insp.checks) {
       Object.values(insp.checks).forEach(c => {
-        if(c.status === 'ok') ok++; else if(c.status === 'warn') warn++; else if(c.status === 'ng') ng++;
+        if (c.status === 'ok') ok++; else if (c.status === 'warn') warn++; else if (c.status === 'ng') ng++;
       });
     }
     body += `--------------------------\n`;
@@ -1070,11 +1070,11 @@ async function bulkSubmit() {
     body += `■点検者: ${insp.inspectorName || ''}\n`;
     body += `■結果: 良好:${ok} / 要注意:${warn} / 不良:${ng}\n`;
     if (insp.approvalComment) body += `■件名: ${insp.approvalComment}\n`;
-    
+
     // ステータス更新
     insp.status = 'pending';
     insp.updatedAt = new Date().toISOString();
-    
+
     // 個別にSharePoint同期もトリガー（バックグラウンド）
     sendToPowerAutomate(insp.id);
   }
@@ -1139,8 +1139,8 @@ function renderApprovalList() {
     return;
   }
   container.innerHTML = data.map(d => {
-    let ok=0,warn=0,ng=0;
-    if(d.checks) Object.values(d.checks).forEach(c=>{if(c.status==='ok')ok++;else if(c.status==='warn')warn++;else if(c.status==='ng')ng++;});
+    let ok = 0, warn = 0, ng = 0;
+    if (d.checks) Object.values(d.checks).forEach(c => { if (c.status === 'ok') ok++; else if (c.status === 'warn') warn++; else if (c.status === 'ng') ng++; });
     return `
     <div class="approval-card">
       <div class="approval-card-header">
@@ -1150,7 +1150,7 @@ function renderApprovalList() {
       </div>
       <div class="approval-card-info">
         <div><label>点検者</label><span>${d.inspectorName || '-'}</span></div>
-        <div><label>点検日時</label><span>${d.inspectionDate ? d.inspectionDate.replace('T',' ') : '-'}</span></div>
+        <div><label>点検日時</label><span>${d.inspectionDate ? d.inspectionDate.replace('T', ' ') : '-'}</span></div>
         <div><label>点検場所</label><span>${d.location || '-'}</span></div>
         <div><label>良好</label><span style="color:var(--green)">${ok}件</span></div>
         <div><label>要注意</label><span style="color:var(--yellow)">${warn}件</span></div>
@@ -1211,8 +1211,8 @@ function openInspectionDetail(id) {
   const insp = data.find(d => d.id === id);
   if (!insp) return;
 
-  let ok=0,warn=0,ng=0;
-  if(insp.checks) Object.values(insp.checks).forEach(c=>{if(c.status==='ok')ok++;else if(c.status==='warn')warn++;else if(c.status==='ng')ng++;});
+  let ok = 0, warn = 0, ng = 0;
+  if (insp.checks) Object.values(insp.checks).forEach(c => { if (c.status === 'ok') ok++; else if (c.status === 'warn') warn++; else if (c.status === 'ng') ng++; });
 
   let checklistHTML = '';
   const sections = {};
@@ -1231,8 +1231,8 @@ function openInspectionDetail(id) {
               <span>${item.name} ${item.photo ? '📷' : ''}</span>
               <div style="display:flex;align-items:center;gap:8px">
                 ${item.comment ? `<span style="font-size:11px;color:var(--gray-400)">${item.comment}</span>` : ''}
-                <span class="modal-check-status ${item.status==='ok'?'status-approved':item.status==='warn'?'status-pending':item.status==='ng'?'status-rejected':'status-draft'}">
-                  ${item.status==='ok'?'✅ 良好':item.status==='warn'?'⚠️ 要注意':item.status==='ng'?'❌ 不良':'－ 未'}
+                <span class="modal-check-status ${item.status === 'ok' ? 'status-approved' : item.status === 'warn' ? 'status-pending' : item.status === 'ng' ? 'status-rejected' : 'status-draft'}">
+                  ${item.status === 'ok' ? '✅ 良好' : item.status === 'warn' ? '⚠️ 要注意' : item.status === 'ng' ? '❌ 不良' : '－ 未'}
                 </span>
               </div>
             </div>`).join('')}
@@ -1248,14 +1248,14 @@ function openInspectionDetail(id) {
     <div class="modal-inspection-header">
       <div class="modal-vehicle-svg">${getVehicleSVG(insp.vehicle)}</div>
       <div>
-        <h2 style="font-size:20px;font-weight:900">${insp.vehicle} ${insp.vehicleNumber ? '【'+insp.vehicleNumber+'】' : ''}</h2>
+        <h2 style="font-size:20px;font-weight:900">${insp.vehicle} ${insp.vehicleNumber ? '【' + insp.vehicleNumber + '】' : ''}</h2>
         <span class="status-badge ${statusClass(insp.status)}" style="margin-top:6px;display:inline-block">${statusLabel(insp.status)}</span>
       </div>
     </div>
     <div class="modal-meta-grid">
       <div class="modal-meta-item"><label>点検者</label><span>${insp.inspectorName || '-'}</span></div>
       <div class="modal-meta-item"><label>所属</label><span>${insp.inspectorDept || '-'}</span></div>
-      <div class="modal-meta-item"><label>点検日時</label><span>${insp.inspectionDate ? insp.inspectionDate.replace('T',' ') : '-'}</span></div>
+      <div class="modal-meta-item"><label>点検日時</label><span>${insp.inspectionDate ? insp.inspectionDate.replace('T', ' ') : '-'}</span></div>
       <div class="modal-meta-item"><label>点検場所</label><span>${insp.location || '-'}</span></div>
       <div class="modal-meta-item"><label>天候</label><span>${insp.weather || '-'}</span></div>
       <div class="modal-meta-item"><label>良好/要注意/不良</label><span style="color:var(--green)">${ok}</span> / <span style="color:var(--yellow)">${warn}</span> / <span style="color:var(--red)">${ng}</span></div>
@@ -1295,7 +1295,7 @@ function loadSettings() {
   if (s.approverName) document.getElementById('approver-name').value = s.approverName;
   if (s.approvalPin) document.getElementById('approval-pin-setting').value = s.approvalPin;
   if (s.powerAutomateUrl) document.getElementById('power-automate-url').value = s.powerAutomateUrl;
-  
+
   const autoLockEl = document.getElementById('setting-auto-lock');
   if (autoLockEl) autoLockEl.value = s.autoLockMinutes || 5;
 
@@ -1327,7 +1327,7 @@ function saveSettings() {
   s.approvalPin = document.getElementById('approval-pin-setting').value || '1234';
   const autoLockEl = document.getElementById('setting-auto-lock');
   if (autoLockEl) s.autoLockMinutes = parseInt(autoLockEl.value) || 5;
-  
+
   saveSettingsData(s);
   showToast('設定を保存しました ✅', 'success');
 }
@@ -1354,7 +1354,7 @@ function exportAllData() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = '点検データ_' + new Date().toISOString().slice(0,10) + '.json';
+  a.download = '点検データ_' + new Date().toISOString().slice(0, 10) + '.json';
   a.click();
 }
 
@@ -1396,7 +1396,7 @@ function exportExcel(id) {
     [],
     ['車両種別', insp.vehicle],
     ['車両番号', insp.vehicleNumber || ''],
-    ['点検日時', insp.inspectionDate ? insp.inspectionDate.replace('T',' ') : ''],
+    ['点検日時', insp.inspectionDate ? insp.inspectionDate.replace('T', ' ') : ''],
     ['点検者', insp.inspectorName || ''],
     ['所属', insp.inspectorDept || ''],
     ['点検場所', insp.location || ''],
@@ -1426,7 +1426,7 @@ function exportExcel(id) {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [{ wch: 30 }, { wch: 12 }, { wch: 40 }];
   XLSX.utils.book_append_sheet(wb, ws, '点検表');
-  const filename = `点検_${insp.vehicle}_${insp.vehicleNumber || ''}_${(insp.inspectionDate || '').slice(0,10)}.xlsx`;
+  const filename = `点検_${insp.vehicle}_${insp.vehicleNumber || ''}_${(insp.inspectionDate || '').slice(0, 10)}.xlsx`;
   XLSX.writeFile(wb, filename);
   showToast('Excelを出力しました 📊', 'success');
 }
@@ -1455,14 +1455,14 @@ async function exportPDF(id) {
         checkRows += `<tr style="background:#1a3a5c;color:#fff"><td colspan="3" style="padding:6px 10px;font-weight:bold">【${c.section}】</td></tr>`;
         currentSection = c.section;
       }
-      const statusTxt = c.status==='ok'?'✅ 良好':c.status==='warn'?'⚠️ 要注意':c.status==='ng'?'❌ 不良':'－ 未確認';
-      const statusColor = c.status==='ok'?'#27ae60':c.status==='warn'?'#f39c12':c.status==='ng'?'#e74c3c':'#888';
-      checkRows += `<tr style="border-bottom:1px solid #eee"><td style="padding:5px 10px">${c.name}</td><td style="padding:5px 10px;color:${statusColor};font-weight:600">${statusTxt}</td><td style="padding:5px 10px;color:#555">${c.comment||''}</td></tr>`;
+      const statusTxt = c.status === 'ok' ? '✅ 良好' : c.status === 'warn' ? '⚠️ 要注意' : c.status === 'ng' ? '❌ 不良' : '－ 未確認';
+      const statusColor = c.status === 'ok' ? '#27ae60' : c.status === 'warn' ? '#f39c12' : c.status === 'ng' ? '#e74c3c' : '#888';
+      checkRows += `<tr style="border-bottom:1px solid #eee"><td style="padding:5px 10px">${c.name}</td><td style="padding:5px 10px;color:${statusColor};font-weight:600">${statusTxt}</td><td style="padding:5px 10px;color:#555">${c.comment || ''}</td></tr>`;
     });
   }
 
-  let ok=0,warn=0,ng=0;
-  if(insp.checks) Object.values(insp.checks).forEach(c=>{if(c.status==='ok')ok++;else if(c.status==='warn')warn++;else if(c.status==='ng')ng++;});
+  let ok = 0, warn = 0, ng = 0;
+  if (insp.checks) Object.values(insp.checks).forEach(c => { if (c.status === 'ok') ok++; else if (c.status === 'warn') warn++; else if (c.status === 'ng') ng++; });
 
   printDiv.innerHTML = `
     <div style="background:#0d1b2a;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
@@ -1473,10 +1473,10 @@ async function exportPDF(id) {
       <div style="text-align:right;font-size:12px;opacity:0.7">出力日: ${new Date().toLocaleDateString('ja-JP')}</div>
     </div>
     <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px">
-      <tr style="background:#f4f6f8"><td style="padding:6px 10px;width:100px;color:#666;font-weight:600">車両種別</td><td style="padding:6px 10px;font-weight:700;font-size:15px">${insp.vehicle}</td><td style="padding:6px 10px;width:100px;color:#666;font-weight:600">車両番号</td><td style="padding:6px 10px">${insp.vehicleNumber||'未記入'}</td></tr>
-      <tr><td style="padding:6px 10px;color:#666;font-weight:600">点検日時</td><td style="padding:6px 10px">${insp.inspectionDate?insp.inspectionDate.replace('T',' '):'-'}</td><td style="padding:6px 10px;color:#666;font-weight:600">点検場所</td><td style="padding:6px 10px">${insp.location||'-'}</td></tr>
-      <tr style="background:#f4f6f8"><td style="padding:6px 10px;color:#666;font-weight:600">点検者</td><td style="padding:6px 10px">${insp.inspectorName||'-'}</td><td style="padding:6px 10px;color:#666;font-weight:600">所属</td><td style="padding:6px 10px">${insp.inspectorDept||'-'}</td></tr>
-      <tr><td style="padding:6px 10px;color:#666;font-weight:600">天候</td><td style="padding:6px 10px">${insp.weather||'-'}</td><td style="padding:6px 10px;color:#666;font-weight:600">ステータス</td><td style="padding:6px 10px;font-weight:700;color:${insp.status==='approved'?'#27ae60':insp.status==='rejected'?'#e74c3c':'#f39c12'}">${statusLabel(insp.status)}</td></tr>
+      <tr style="background:#f4f6f8"><td style="padding:6px 10px;width:100px;color:#666;font-weight:600">車両種別</td><td style="padding:6px 10px;font-weight:700;font-size:15px">${insp.vehicle}</td><td style="padding:6px 10px;width:100px;color:#666;font-weight:600">車両番号</td><td style="padding:6px 10px">${insp.vehicleNumber || '未記入'}</td></tr>
+      <tr><td style="padding:6px 10px;color:#666;font-weight:600">点検日時</td><td style="padding:6px 10px">${insp.inspectionDate ? insp.inspectionDate.replace('T', ' ') : '-'}</td><td style="padding:6px 10px;color:#666;font-weight:600">点検場所</td><td style="padding:6px 10px">${insp.location || '-'}</td></tr>
+      <tr style="background:#f4f6f8"><td style="padding:6px 10px;color:#666;font-weight:600">点検者</td><td style="padding:6px 10px">${insp.inspectorName || '-'}</td><td style="padding:6px 10px;color:#666;font-weight:600">所属</td><td style="padding:6px 10px">${insp.inspectorDept || '-'}</td></tr>
+      <tr><td style="padding:6px 10px;color:#666;font-weight:600">天候</td><td style="padding:6px 10px">${insp.weather || '-'}</td><td style="padding:6px 10px;color:#666;font-weight:600">ステータス</td><td style="padding:6px 10px;font-weight:700;color:${insp.status === 'approved' ? '#27ae60' : insp.status === 'rejected' ? '#e74c3c' : '#f39c12'}">${statusLabel(insp.status)}</td></tr>
     </table>
     <div style="display:flex;gap:12px;margin-bottom:16px">
       <div style="flex:1;background:#e8f8ef;border-radius:6px;padding:10px;text-align:center"><div style="font-size:22px;font-weight:900;color:#27ae60">${ok}</div><div style="font-size:11px;color:#555">良好</div></div>
@@ -1525,7 +1525,7 @@ async function exportPDF(id) {
       }
     }
 
-    const filename = `点検_${insp.vehicle}_${insp.vehicleNumber||''}_${(insp.inspectionDate||'').slice(0,10)}.pdf`;
+    const filename = `点検_${insp.vehicle}_${insp.vehicleNumber || ''}_${(insp.inspectionDate || '').slice(0, 10)}.pdf`;
     doc.save(filename);
     showToast('PDFを出力しました 📄', 'success');
   } catch (e) {
@@ -1539,15 +1539,15 @@ async function exportPDF(id) {
 function formatDate(iso) {
   if (!iso) return '-';
   const d = new Date(iso);
-  return d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
 }
 
 function statusLabel(s) {
-  return { draft:'下書き', pending:'承認待ち', approved:'承認済み', rejected:'差し戻し' }[s] || s;
+  return { draft: '下書き', pending: '承認待ち', approved: '承認済み', rejected: '差し戻し' }[s] || s;
 }
 
 function statusClass(s) {
-  return { draft:'status-draft', pending:'status-pending', approved:'status-approved', rejected:'status-rejected' }[s] || '';
+  return { draft: 'status-draft', pending: 'status-pending', approved: 'status-approved', rejected: 'status-rejected' }[s] || '';
 }
 
 function updateApprovalBadge() {
@@ -1591,12 +1591,12 @@ function renderRefPhotoSettings() {
 
     // セクションタイトルを表示
     html += `<div style="grid-column: 1 / -1; margin: 15px 0 5px; color: var(--orange); font-size: 13px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">${section.section}</div>`;
-    
+
     sectionItems.forEach(item => {
       const customImg = vehicleRefs[item.id];
       const displayImg = customImg || item.refImage || '';
       const isActive = activeItems ? activeItems.includes(item.id) : true;
-      
+
       html += `
         <div class="ref-manager-item">
           <div class="ref-manager-preview">
@@ -1636,10 +1636,10 @@ function toggleItemActive(vehicle, itemId, checked) {
     // If first time setting active items for this vehicle, initialize with all except this if needed
     data[vehicle] = [];
     CHECKLIST.forEach(s => s.items.forEach(it => {
-       if (it.id !== itemId || checked) data[vehicle].push(it.id);
+      if (it.id !== itemId || checked) data[vehicle].push(it.id);
     }));
   }
-  
+
   if (checked) {
     if (!data[vehicle].includes(itemId)) data[vehicle].push(itemId);
   } else {
@@ -1660,7 +1660,7 @@ function handleRefPhotoUpload(vehicle, itemId, event) {
   if (!file) return;
 
   showToast('お手本画像を処理中...', 'success');
-  
+
   // お手本画像はさらに小さく圧縮（400px）
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -1682,12 +1682,12 @@ function handleRefPhotoUpload(vehicle, itemId, event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
       const base64 = canvas.toDataURL('image/jpeg', 0.5); // 品質も抑える
-      
+
       const refPhotos = getRefPhotos();
       if (!refPhotos[vehicle]) refPhotos[vehicle] = {};
       refPhotos[vehicle][itemId] = base64;
       saveRefPhotos(refPhotos);
-      
+
       renderRefPhotoSettings();
       showToast('お手本画像を更新しました', 'success');
     };
@@ -1741,16 +1741,16 @@ function addCustomItem() {
   const nameEl = document.getElementById('custom-item-name');
   const noteEl = document.getElementById('custom-item-note');
   const sectionEl = document.getElementById('custom-item-section');
-  
+
   const name = nameEl.value.trim();
   const note = noteEl.value.trim();
   const section = sectionEl.value;
-  
+
   if (!name) {
     showToast('項目名を入力してください', 'error');
     return;
   }
-  
+
   const customItems = getCustomItems();
   const newItem = {
     id: 'custom_' + Date.now(),
@@ -1758,13 +1758,13 @@ function addCustomItem() {
     note: note,
     section: section
   };
-  
+
   customItems.push(newItem);
   saveCustomItemsData(customItems);
-  
+
   nameEl.value = '';
   noteEl.value = '';
-  
+
   renderCustomItemsList();
   renderRefPhotoSettings(); // 写真管理側も更新
   showToast('項目を追加しました', 'success');
@@ -1772,11 +1772,11 @@ function addCustomItem() {
 
 function deleteCustomItem(id) {
   if (!confirm('この項目を完全に削除しますか？')) return;
-  
+
   let customItems = getCustomItems();
   customItems = customItems.filter(it => it.id !== id);
   saveCustomItemsData(customItems);
-  
+
   renderCustomItemsList();
   renderRefPhotoSettings();
   showToast('項目を削除しました', 'success');
@@ -1785,12 +1785,12 @@ function deleteCustomItem(id) {
 function renderCustomItemsList() {
   const list = document.getElementById('custom-items-list');
   const customItems = getCustomItems();
-  
+
   if (customItems.length === 0) {
     list.innerHTML = '<p style="font-size:12px; color:#555">追加済みの項目はありません</p>';
     return;
   }
-  
+
   list.innerHTML = customItems.map(it => `
     <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.03); padding:8px 12px; border-radius:4px; border:1px solid rgba(255,255,255,0.05)">
       <div style="flex:1">
